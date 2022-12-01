@@ -39,26 +39,6 @@ const {
   GraphQLNonNull,
 } = graphql;
 
-/*
-{
-  user(id: "92"){
-    id
-    name
-    age
-    profession
-    posts{
-      comment
-      id
-    }
-		hobbies{
-      id
-      title
-      description
-    }
-  }
-}
-*/
-// Create types
 const UserType = new GraphQLObjectType({
   name: "User",
   description: "Documentation for user...",
@@ -94,7 +74,6 @@ const HobbyType = new GraphQLObjectType({
     user: {
       type: UserType,
       resolve(parent, args) {
-        // return _.find(usersData, { id: parent.userId });
         return User.findById(parent.userId);
       },
     },
@@ -110,7 +89,6 @@ const PostType = new GraphQLObjectType({
     user: {
       type: UserType,
       resolve(parent, args) {
-        // return _.find(usersData, { id: parent.userId });
         return User.findById(parent.userId);
       },
     },
@@ -127,24 +105,13 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
 
       resolve(parent, args) {
-        // return _.find(usersData, { id: args.id });
         return User.findById(args.id);
       },
     },
 
-    /*
-    {
-      users{
-        id
-        name
-        profession
-      }
-    }
-    */
     users: {
       type: new GraphQLList(UserType),
       resolve(parent, args) {
-        // return usersData;
         return User.find({});
       },
     },
@@ -154,24 +121,13 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
 
       resolve(parents, args) {
-        // return _.find(hobbiesData, { id: args.id });
         return Hobby.findById(args.id);
       },
     },
 
-    /*
-    {
-      hobbies{
-        id
-        title
-        description
-      }	
-    }
-    */
     hobbies: {
       type: new GraphQLList(HobbyType),
       resolve(parent, args) {
-        // return hobbiesData;
         return Hobby.find({ id: args.userId });
       },
     },
@@ -181,24 +137,13 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
 
       resolve(parent, args) {
-        // return _.find(postsData, { id: args.id });
         return Post.findById(args.id);
       },
     },
 
-    /*
-    {
-      posts
-      {
-        id
-        comment
-      }
-    }
-    */
     posts: {
       type: new GraphQLList(PostType),
       resolve(parent, args) {
-        // return postsData;
         return Post.find({});
       },
     },
@@ -209,19 +154,6 @@ const RootQuery = new GraphQLObjectType({
 const Mutation = new GraphQLObjectType({
   name: "Mutation",
   fields: {
-    /* 
-    mutation{
-      createUser(
-        name: "albert", 
-        age:8, 
-        profession:"Rabbit Man")
-      {
-        name
-        age
-        profession
-      }
-    }
-    */
     createUser: {
       type: UserType,
       args: {
@@ -266,6 +198,21 @@ const Mutation = new GraphQLObjectType({
       },
     },
 
+    removeUser: {
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      resolve(parent, args) {
+        let removedUser = User.findByIdAndRemove(args.id).exec();
+
+        if (!removedUser) {
+          throw new "Error: error occured for removedUser "();
+        }
+        return removedUser;
+      },
+    },
+
     createPost: {
       type: PostType,
       args: {
@@ -306,21 +253,21 @@ const Mutation = new GraphQLObjectType({
       },
     },
 
-    /*
-    mutation{
-      createHobby(id:"29", title:"New Hobby", description:"A new hobby", userId:"92")
-      {
-        id
-        title
-        description
-        user{
-          id
-          name
-          profession
+    removePost: {
+      type: PostType,
+      args: {
+        id: { type: GraphQLID },
+      },
+      resolve(parent, args) {
+        let removedPost = Post.findByIdAndRemove(args.id).exec();
+
+        if (!removedPost) {
+          throw new "Error: error occured for removedPost "();
         }
-      }
+        return removedPost;
+      },
     },
-    */
+
     createHobby: {
       type: HobbyType,
       args: {
@@ -339,6 +286,45 @@ const Mutation = new GraphQLObjectType({
         });
 
         return hobby.save();
+      },
+    },
+
+    updateHobby: {
+      type: HobbyType,
+      args: {
+        id: { type: GraphQLID },
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        description: { type: new GraphQLNonNull(GraphQLString) },
+        userId: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        return (updatedHobby = Hobby.findByIdAndUpdate(
+          args.id,
+          {
+            $set: {
+              title: args.title,
+              description: args.description,
+            },
+          },
+          {
+            new: true,
+          }
+        ));
+      },
+    },
+
+    removeHobby: {
+      type: HobbyType,
+      args: {
+        id: { type: GraphQLID },
+      },
+      resolve(parent, args) {
+        let removedHobby = Hobby.findByIdAndRemove(args.id).exec();
+
+        if (!removedHobby) {
+          throw new "Error: error occured for removedHobby "();
+        }
+        return removedHobby;
       },
     },
   },
